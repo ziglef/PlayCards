@@ -9,8 +9,10 @@ typedef struct deck {
 } DECK;
 
 typedef struct player {
+	int number;
 	CARD *hand;
 	char *name;
+	char *FIFOname;
 } PLAYER;
 
 void printCard(CARD c);
