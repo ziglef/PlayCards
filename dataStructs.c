@@ -13,7 +13,7 @@
 
 #include "dataStructs.h"
 
-char *itoa(int n){
+char *itoa(int n) {
 
 	char *c = (char *)malloc(sizeof(char));
 	int i = 0;
@@ -38,8 +38,7 @@ char *itoa(int n){
 	return c;
 }
 
-
-DECK *DECK_init(){
+DECK *DECK_init() {
 
 	int i;
 	int suit = 0;
@@ -87,7 +86,7 @@ DECK *DECK_init(){
 	return deck;
 }
 
-void DECK_shuffle(DECK *deck){
+void DECK_shuffle(DECK *deck) {
 
 	int i, j, k;
 
@@ -148,45 +147,31 @@ void shmM_destroy(GAMEINFO *shm, char *shm_name, int shm_size) {
 	}
 }
 
-// TESTING PURPOSES ONLY //
-/*
-int main(){
+void shmM_init( GAMEINFO *shm, int nplayers ) {
 
-	int i;
-	srand(time(NULL));
+	shm->players = (PLAYER *)malloc( sizeof(PLAYER) * nplayers );
+	shm->nPlayers = 1;
+	shm->pturn = 0;
+	shm->round = 0;
+	shm->dealer = 0;
+	shm->table = (CARD *)malloc( sizeof(CARD) * nplayers );
 	
-	DECK *deck = DECK_init();
-
-	printf("** Before Shuffles **\n");
-	for(i=0;i<52;i++){
-		printf("%s%c  ", deck->cards[i].rank, deck->cards[i].suit);
-
-		if((i % 13) == 12)
-			printf("\n");
-	}
-
-	printf("\n** After First Shuffle **\n");
-	DECK_shuffle(deck);
-
-	for(i=0;i<52;i++){
-		printf("%s%c  ", deck->cards[i].rank, deck->cards[i].suit);
-
-		if((i % 13) == 12)
-			printf("\n");
-	}
-
-
-	printf("\n** After Second Shuffle **\n");
-
-	DECK_shuffle(deck);
-
-	for(i=0;i<52;i++){
-		printf("%s%c  ", deck->cards[i].rank, deck->cards[i].suit);
-
-		if((i % 13) == 12)
-			printf("\n");
-	}
-
-	return 0;
+	
 }
-*/
+
+PLAYER *PLAYER_init( char *pName, char *FIFOname, int number, int FIFOfd ) {
+	PLAYER *p;
+	
+	p = (PLAYER *)malloc( sizeof(PLAYER) );
+	if( p == NULL )
+		return NULL;
+		
+	p->number = number;
+	p->hand = NULL;
+	p->name = strndup( pName, strlen(pName) );
+	p->FIFOname = strndup( FIFOname, strlen(FIFOname) );
+	p->FIFOfd = FIFOfd;
+	
+	return p;
+}
+
