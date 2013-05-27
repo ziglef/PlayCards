@@ -1,6 +1,10 @@
 #include "dataStructs.h"
 #include "shmModule.h"
 
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+
 int main(int argc, char *argv[]){
 
 	if(argc != 4){
