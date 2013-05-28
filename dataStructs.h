@@ -31,7 +31,6 @@ typedef struct PLAYER {
 	CARD hand[26];
 	char name[15];
 	char FIFOname[16];
-	int FIFOfd;
 } PLAYER;
 
 typedef struct GAMEINFO {
@@ -39,18 +38,16 @@ typedef struct GAMEINFO {
 	int currPlayers;
 	int nPlayers;
 	int pturn;
-	int round;
+	int currRound;
 	int dealer;
 	DECK table;
 	pthread_mutex_t gameStart_mut;
-	pthread_cond_t gameStart_cond;
 } GAMEINFO;
 
 // Auxiliary Methods
 char *itoa( int n );
 
 // PLAYER Methods
-void PLAYER_init( PLAYER *p, char *pName, char *FIFOname, int number, int FIFOfd );
 
 // DECK Methods
 void DECK_init(DECK *deck);

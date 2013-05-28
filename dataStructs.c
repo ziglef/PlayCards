@@ -107,14 +107,6 @@ GAMEINFO *shmM_create( char *shm_name, int shm_size ) {
 		return NULL;
 	}
 
-	shm->currPlayers = 0;
-	shm->nPlayers = 0;
-	shm->pturn = 0;
-	shm->round = 0;
-	shm->dealer = 0;
-	pthread_mutex_init( &(shm->gameStart_mut), NULL );
-	pthread_cond_init( &(shm->gameStart_cond), NULL );
-
 	return (GAMEINFO *)shm;
 }
 
@@ -153,11 +145,4 @@ void shmM_destroy(GAMEINFO *shm, char *shm_name, int shm_size) {
 		perror("Failure in shm_unlink()");
 		exit(EXIT_FAILURE);
 	}
-}
-
-void PLAYER_init( PLAYER *p, char *pName, char *FIFOname, int number, int FIFOfd ) {		
-	p->number = number;
-	strncpy( p->name, pName, strlen(pName) + 1 );
-	strncpy( p->FIFOname, FIFOname, strlen(FIFOname) + 1);
-	p->FIFOfd = FIFOfd;
 }
