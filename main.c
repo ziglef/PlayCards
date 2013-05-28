@@ -1,22 +1,9 @@
 #include "dataStructs.h"
 
-void SIGUSR1_HANDLER(int signo){	
-	return ;
-}
-
 void *gameLoop( void *arg ){
 	
 	GAMEINFO *shm = arg;
-	
-	struct sigaction sigstruct;
-	sigstruct.sa_handler = SIGUSR1_HANDLER;
-	sigemptyset(&sigstruct.sa_mask);
-  
-	if(sigaction(SIGUSR1,&sigstruct, NULL) < 0) {
-		fprintf(stderr,"Unable to install SIGUSR1 handler\n");
-		exit(1);
-	}
-	
+
 	int i, j;
 	int FIFOS[shm->nPlayers];
 	int NPLAYERS = shm->nPlayers;
@@ -47,25 +34,37 @@ void *gameLoop( void *arg ){
 	printf("UNLOCKING MUTEXES!\n");
 	fflush(stdout);
 	for(i=0; i<NPLAYERS; i++) pthread_mutex_unlock( &shm->PPERM[i] );
-	
-	i = 0;
+
+	shm->pturn = 0;
+	shm->currRound = 1;
 	while( shm->GAMERUNNING ) {
 		printf("SHM->PTURN : %d\n", shm->pturn);
-		pthread_mutex_unlock( &shm->PPERM_READ[shm->pturn] );
+		pthread_mutex_lock( &shm->SCREEN_WRITE );
+		for(i=0; i<NPLAYERS; i++) pthread_mutex_unlock( &shm->PPERM_READ[i] );
 		
 		int CARDNO;
 		read(FIFOS[shm->pturn], &CARDNO, sizeof(int));
-		printf("O jogador %s, tentou jogar a carta %d, que era : %s%c\n", shm->players[shm->pturn].name, CARDNO, shm->players[shm->pturn].hand[CARDNO].rank, shm->players[shm->pturn].hand[CARDNO].suit);
+		sprintf( shm->current_play, "O jogador %s, tentou jogar a carta %d, que era : %s%c\n",
+				shm->players[shm->pturn].name,
+				CARDNO,
+				shm->players[shm->pturn].hand[CARDNO].rank,
+				shm->players[shm->pturn].hand[CARDNO].suit
+				);
 		
-		pthread_mutex_lock( &shm->PPERM_READ[shm->pturn] );
-		kill( shm->PPID[shm->pturn], SIGUSR1 );
+		pthread_mutex_unlock( &shm->SCREEN_WRITE );
+		for(i=0; i<NPLAYERS; i++) {
+			pthread_mutex_lock( &shm->PPERM_READ[i] );
+		}
+		
+		for(i=0; i<NPLAYERS; i++) shm->players[i].number = i;
 		
 		shm->pturn += 1;
-		if(shm->pturn > shm->nPlayers - 1)
+		if(shm->pturn > shm->nPlayers - 1) {
 			shm->pturn = 0;
+			shm->currRound++;
+		}
 			
-		i++;
-		if( i == 3 )
+		if( shm->currRound == 2 )
 			shm->GAMERUNNING = 0;
 	}
 	
@@ -105,16 +104,7 @@ int main(int argc, char *argv[]){
 	strcat(shmName, argv[2]);
 	
 	int nPlayers = atoi(argv[3]);
-	
-	struct sigaction sigstruct;
-	sigstruct.sa_handler = SIGUSR1_HANDLER;
-	sigemptyset(&sigstruct.sa_mask);
-  
-	if(sigaction(SIGUSR1,&sigstruct, NULL) < 0) {
-		fprintf(stderr,"Unable to install SIGUSR1 handler\n");
-		exit(1);
-	}
-	
+
 	GAMEINFO *shm = shmM_attach( shmName, sizeof(GAMEINFO) );
 	if( shm == NULL ) shm = shmM_create( shmName, sizeof(GAMEINFO) );
 	
@@ -132,6 +122,7 @@ int main(int argc, char *argv[]){
 		pthread_mutexattr_setpshared( &SHARED_ATTR, PTHREAD_PROCESS_SHARED );
 		pthread_mutex_init( &shm->GAMEFLAGS_MUT, &SHARED_ATTR );
 		pthread_mutex_init( &shm->GAMESTART_MUT, &SHARED_ATTR );
+		pthread_mutex_init( &shm->SCREEN_WRITE, &SHARED_ATTR );
 		
 		for(i=0; i<PLAYER_MAX; i++){
 			pthread_mutex_init( &shm->PPERM[i], &SHARED_ATTR );
@@ -154,9 +145,9 @@ int main(int argc, char *argv[]){
 	
 	shm->currPlayers += 1;
 	shm->PPID[PLAYERID] = getpid();
-	shm->players[shm->currPlayers - 1].number = shm->currPlayers - 1;
-	strncpy( shm->players[shm->currPlayers - 1].name, pName, strlen(pName) + 1 );
-	strncpy( shm->players[shm->currPlayers - 1].FIFOname, FIFOname, strlen(FIFOname) + 1);
+	shm->players[PLAYERID].number = PLAYERID;
+	strncpy( shm->players[PLAYERID].name, pName, strlen(pName) + 1 );
+	strncpy( shm->players[PLAYERID].FIFOname, FIFOname, strlen(FIFOname) + 1);
 	
 	printf("GAMEINFO :\n");
 	for(i = 0; i < shm->currPlayers; i++)
@@ -179,8 +170,6 @@ int main(int argc, char *argv[]){
 			perror("Failure in pthread_create()");
 			exit(2);
 		} 
-		
-		pthread_mutex_unlock( &shm->GAMEFLAGS_MUT );
 		
 	}
 	
@@ -206,18 +195,22 @@ int main(int argc, char *argv[]){
 		pthread_mutex_lock( &shm->PPERM_READ[PLAYERID] );
 		
 		if( shm->GAMERUNNING == 0 ) break;
-		
-		for( i=0; i<DECK_SIZE/shm->nPlayers; i++ )
-			printf("CARTA %d : %s%c\n", i, shm->players[PLAYERID].hand[i].rank, shm->players[PLAYERID].hand[i].suit ); 
+		if( shm->pturn == PLAYERID ) {
+			for( i=0; i<DECK_SIZE/shm->nPlayers; i++ ) printf("CARTA %d : %s%c\n", i, shm->players[PLAYERID].hand[i].rank, shm->players[PLAYERID].hand[i].suit ); 
 					
-		printf("Introduza o indice da carta a jogar: ");
-		scanf("%d", &C2PLAY);
-		getchar();
+			printf("Introduza o indice da carta a jogar: ");
+			scanf("%d", &C2PLAY);
+			getchar();
 				
-		write( PFIFO, &C2PLAY, sizeof(int) );
+			write( PFIFO, &C2PLAY, sizeof(int) );
+		}
+		
+		pthread_mutex_lock( &shm->SCREEN_WRITE );
+		printf("CURRENT PLAY: %s\n", shm->current_play);
+		pthread_mutex_unlock( &shm->SCREEN_WRITE );
 		pthread_mutex_unlock( &shm->PPERM_READ[PLAYERID] );
 
-		sleep( INT_MAX );
+		sleep(1);
 	}
 		
 		shm->currPlayers -= 1;
