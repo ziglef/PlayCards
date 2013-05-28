@@ -1,5 +1,10 @@
 #include "dataStructs.h"
 
+void SIGUSR1_HANDLER(int signo){
+	if( signo == SIGUSR1 )		
+		return ;
+}
+
 void *gameLoop( void *arg ){
 	
 	GAMEINFO *shm = arg;
@@ -45,6 +50,7 @@ void *gameLoop( void *arg ){
 		printf("O jogador %s, tentou jogar a carta %d, que era : %s%c\n", shm->players[shm->pturn + 1].name, CARDNO, shm->players[shm->pturn + 1].hand[CARDNO].rank, shm->players[shm->pturn + 1].hand[CARDNO].suit);
 		
 		pthread_mutex_lock( &shm->PPERM_READ[shm->pturn + 1] );
+		kill( shm->PPID[shm->pturn + 1], SIGUSR1 );
 		
 		shm->pturn += 1;
 		if(shm->pturn > 1)
@@ -95,6 +101,15 @@ int main(int argc, char *argv[]){
 	
 	int nPlayers = atoi(argv[3]);
 	
+	struct sigaction sigstruct;
+	sigstruct.sa_handler = SIGUSR1_HANDLER;
+	sigemptyset(&sigstruct.sa_mask);
+  
+	if(sigaction(SIGUSR1,&sigstruct, NULL) < 0) {
+		fprintf(stderr,"Unable to install SIGUSR1 handler\n");
+		exit(1);
+	}
+	
 	GAMEINFO *shm = shmM_attach( shmName, sizeof(GAMEINFO) );
 	if( shm == NULL ) shm = shmM_create( shmName, sizeof(GAMEINFO) );
 	
@@ -133,6 +148,7 @@ int main(int argc, char *argv[]){
 	PLAYERID = shm->currPlayers;
 	
 	shm->currPlayers += 1;
+	shm->PPID[PLAYERID] = getpid();
 	shm->players[shm->currPlayers - 1].number = shm->currPlayers - 1;
 	strncpy( shm->players[shm->currPlayers - 1].name, pName, strlen(pName) + 1 );
 	strncpy( shm->players[shm->currPlayers - 1].FIFOname, FIFOname, strlen(FIFOname) + 1);
@@ -163,8 +179,6 @@ int main(int argc, char *argv[]){
 		pthread_join( tid, &THREAD_RETURN ); 
 		
 		pthread_mutex_unlock( &shm->GAMEFLAGS_MUT );
-		
-		shm->currPlayers -= 1;
 		
 	} else {	// NOT DEALER CODE
 		int PFIFO;
@@ -200,7 +214,7 @@ int main(int argc, char *argv[]){
 			write( PFIFO, &C2PLAY, sizeof(int) );
 			pthread_mutex_unlock( &shm->PPERM_READ[PLAYERID] );
 
-			sleep(1);
+			sleep( INT_MAX );
 		}
 		
 		shm->currPlayers -= 1;

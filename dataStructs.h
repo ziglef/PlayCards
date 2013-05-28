@@ -7,6 +7,8 @@
 #include <fcntl.h>
 #include <time.h>
 #include <semaphore.h>
+#include <limits.h>
+#include <signal.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -39,6 +41,7 @@ typedef struct PLAYER {
 
 typedef struct GAMEINFO {
 	PLAYER players[8];
+	pid_t PPID[8];
 	int currPlayers;
 	int nPlayers;
 	int pturn;
