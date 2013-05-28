@@ -3,7 +3,7 @@
 void getDate(char * when) {
     
 	time_t rawtime;
-	tm_s *timeInfo;
+	struct tm *timeInfo;
 
 	time(&rawtime);
 	timeInfo = localtime(&rawtime);
@@ -106,6 +106,7 @@ CARD DECK_remove_card(DECK* deck) {
 CARD PLAYER_HAND_remove_card(PLAYER* card, int pos){
 
 	CARD aux_card;
+	int i;
 	
 	if(card == NULL || pos<0 || pos >= card->hand_size) exit(-1);
 	

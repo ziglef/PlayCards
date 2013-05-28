@@ -67,6 +67,7 @@ typedef struct GAMEINFO {
 
 // Auxiliary Methods
 char *itoa( int n );
+void getDate( char *when );
 
 // PLAYER Methods
 
