@@ -33,7 +33,6 @@ typedef struct DECK {
 typedef struct PLAYER {
 	int number;
 	CARD hand[26];
-	int initialized;
 	char name[15];
 	char FIFOname[16];
 } PLAYER;
@@ -52,6 +51,7 @@ typedef struct GAMEINFO {
 	pthread_mutex_t GAMEFLAGS_MUT;
 	pthread_mutex_t GAMESTART_MUT;
 	pthread_mutex_t PPERM[8];
+	pthread_mutex_t PPERM_READ[8];
 } GAMEINFO;
 
 // Auxiliary Methods
