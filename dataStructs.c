@@ -32,19 +32,21 @@ void DECK_init(DECK *deck) {
 	int rank = FIRST_NUMERAL;
 	char *sRank;
 	
+	deck->size = 52;
+	
 	for(i = 0; i< DECK_SIZE; i++){
 
 		if((i % 13) == 0)
-			strncpy(deck->cards[i].rank, "A", 1);
+			strncpy(deck->cards[i].rank, "A\0", 2);
 		else if((i % 13) == 10)
-			strncpy(deck->cards[i].rank, "J", 1);
+			strncpy(deck->cards[i].rank, "J\0", 2);
 		else if((i % 13) == 11)
-			strncpy(deck->cards[i].rank, "Q", 1);
+			strncpy(deck->cards[i].rank, "Q\0", 2);
 		else if((i % 13) == 12)
-			strncpy(deck->cards[i].rank, "K", 1);
+			strncpy(deck->cards[i].rank, "K\0", 2);
 		else{
 			sRank = itoa(rank);
-			strncpy(deck->cards[i].rank, sRank, strlen(sRank));
+			strncpy(deck->cards[i].rank, sRank, strlen(sRank) + 1);
 			rank++;
 		}
 
@@ -79,6 +81,15 @@ void DECK_shuffle(DECK *deck) {
 		deck->cards[j] =  deck->cards[k];
 		deck->cards[k] = aux;
 	}
+}
+
+CARD DECK_remove_card(DECK* deck) {
+
+	if(deck->cards == NULL || deck->size < 1) exit(-1);
+
+	deck->size--;
+
+	return deck->cards[deck->size];
 }
 
 GAMEINFO *shmM_create( char *shm_name, int shm_size ) {
