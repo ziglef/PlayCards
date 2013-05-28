@@ -17,6 +17,7 @@ void *gameLoop( void *arg ){
 	for(i=0; i<NPLAYERS; i++) pthread_mutex_lock( &shm->PPERM[i] );
 	for(i=0; i<NPLAYERS; i++) pthread_mutex_lock( &shm->PPERM_READ[i] );
 
+
 	pthread_mutex_unlock( &shm->GAMESTART_MUT );
 
 	printf("DECK SHUFFLING\n");
@@ -27,6 +28,7 @@ void *gameLoop( void *arg ){
 		printf("DEALING CARDS TO PLAYER %d\n", i+1);
 		for(j=0; j<DECK_SIZE/NPLAYERS; j++){
 			CARD buf = DECK_remove_card( &shm->table );
+			shm->player[i]->hand_size++;
 			write( FIFOS[i], &buf, sizeof(CARD) );
 		}
 	}
@@ -240,3 +242,4 @@ int main(int argc, char *argv[]){
 	
 	return 0;
 }
+

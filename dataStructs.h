@@ -17,10 +17,13 @@
 #include <sys/sem.h>
 #include <sys/ipc.h>
 
-#define 	SHUFFLE_TIMES	256
-#define 	FIRST_NUMERAL 	2
-#define 	DECK_SIZE 		52
-#define		PLAYER_MAX		8
+#define 	SHUFFLE_TIMES		256
+#define 	FIRST_NUMERAL 		2
+#define 	DECK_SIZE 			52
+#define		PLAYER_MAX			8
+#define 	MAX_HAND_SIZE 		26
+#define 	NUM_OF_CHARACTERS	20
+
 
 typedef struct CARD {
 	char suit;
@@ -34,7 +37,8 @@ typedef struct DECK {
 
 typedef struct PLAYER {
 	int number;
-	CARD hand[26];
+	CARD hand[MAX_HAND_SIZE];
+	int hand_size;
 	char name[15];
 	char FIFOname[16];
 } PLAYER;
@@ -53,8 +57,12 @@ typedef struct GAMEINFO {
 	
 	pthread_mutex_t GAMEFLAGS_MUT;
 	pthread_mutex_t GAMESTART_MUT;
+	pthread_mutex_t SCREEN_WRITE;
 	pthread_mutex_t PPERM[8];
 	pthread_mutex_t PPERM_READ[8];
+	
+	char current_play[256];
+	char old_play[256];
 } GAMEINFO;
 
 // Auxiliary Methods
@@ -66,6 +74,7 @@ char *itoa( int n );
 void DECK_init( DECK *deck );
 void DECK_shuffle( DECK *deck );
 CARD DECK_remove_card( DECK* deck );
+CARD PLAYER_HAND_remove_card(PLAYER* card, int pos);
 
 // Shared Memory Methods
 GAMEINFO *shmM_create( char *shm_name, int shm_size );

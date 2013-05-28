@@ -1,5 +1,16 @@
 #include "dataStructs.h"
 
+void getDate(char * when) {
+    
+	time_t rawtime;
+	tm_s *timeInfo;
+
+	time(&rawtime);
+	timeInfo = localtime(&rawtime);
+
+	strftime(when, NUM_OF_CHARACTERS, "%G-%m-%d %H:%M:%S", timeInfo);
+}
+
 char *itoa(int n) {
 
 	char *c = (char *)malloc(sizeof(char));
@@ -90,6 +101,24 @@ CARD DECK_remove_card(DECK* deck) {
 	deck->size--;
 
 	return deck->cards[deck->size];
+}
+
+CARD PLAYER_HAND_remove_card(PLAYER* card, int pos){
+
+	CARD aux_card;
+	
+	if(card == NULL || pos<0 || pos >= card->hand_size) exit(-1);
+	
+	aux_card = card->hand[pos];
+	
+	/* copy all the elements from pos+1 until the end of vector to pos*/
+	for(i=pos+1; i<card->hand_size; i++){
+		card->hand[i-1] = card->hand[i];
+	}
+
+	card->hand_size--;
+
+	return aux_card; 
 }
 
 GAMEINFO *shmM_create( char *shm_name, int shm_size ) {
