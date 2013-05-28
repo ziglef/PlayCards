@@ -4,7 +4,7 @@ void *gameLoop( void *arg ){
 	
 	GAMEINFO *shm = arg;
 
-	int i, j;
+	int i, j, k;
 	int FIFOS[shm->nPlayers];
 	int NPLAYERS = shm->nPlayers;
 	
