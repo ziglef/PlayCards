@@ -1,45 +1,62 @@
+#include <stdio.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <fcntl.h>
+#include <time.h>
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/shm.h>
+#include <sys/mman.h>
+
 #define 	SHUFFLE_TIMES	256
 #define 	FIRST_NUMERAL 	2
 #define 	DECK_SIZE 		52
 
-typedef struct {
+typedef struct CARD {
 	char suit;
-	char *rank;
+	char rank[3];
 } CARD;
 
-typedef struct {
-	CARD *cards;
+typedef struct DECK {
+	CARD cards[DECK_SIZE];
 	int size;
 } DECK;
 
-typedef struct {
+typedef struct PLAYER {
 	int number;
-	CARD *hand;
-	char *name;
-	char *FIFOname;
+	CARD hand[26];
+	char name[15];
+	char FIFOname[16];
 	int FIFOfd;
 } PLAYER;
 
-typedef struct {
-	PLAYER *players;
+typedef struct GAMEINFO {
+	PLAYER players[8];
+	int currPlayers;
 	int nPlayers;
 	int pturn;
 	int round;
 	int dealer;
-	CARD *table;
+	DECK table;
+	pthread_mutex_t gameStart_mut;
+	pthread_cond_t gameStart_cond;
 } GAMEINFO;
 
 // Auxiliary Methods
-char *itoa(int n);
+char *itoa( int n );
 
 // PLAYER Methods
-PLAYER *PLAYER_init();
+void PLAYER_init( PLAYER *p, char *pName, char *FIFOname, int number, int FIFOfd );
 
 // DECK Methods
-DECK *DECK_init();
-void DECK_shuffle(DECK *deck);
+void DECK_init(DECK *deck);
+void DECK_shuffle( DECK *deck );
 
 // Shared Memory Methods
-GAMEINFO *shmM_open_create( char *shm_name, int shm_size );
-void shmM_destroy(GAMEINFO *shm, char *shm_name, int shm_size);
-void shmM_init( GAMEINFO *shm, int nplayers );
+GAMEINFO *shmM_create( char *shm_name, int shm_size );
+GAMEINFO *shmM_attach( char *shm_name, int shm_size );
+void shmM_destroy( GAMEINFO *shm, char *shm_name, int shm_size );

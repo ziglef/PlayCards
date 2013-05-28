@@ -1,16 +1,3 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <time.h>
-
-#include <unistd.h>
-#include <sys/types.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <stdio.h>
-#include <errno.h>
-
 #include "dataStructs.h"
 
 char *itoa(int n) {
@@ -38,35 +25,26 @@ char *itoa(int n) {
 	return c;
 }
 
-DECK *DECK_init() {
+void DECK_init(DECK *deck) {
 
 	int i;
 	int suit = 0;
 	int rank = FIRST_NUMERAL;
 	char *sRank;
 	
-	DECK *deck = (DECK *)malloc( sizeof(DECK) );
-	
-	if( deck == NULL )
-		return NULL;
-		
-	deck->cards = (CARD *)malloc( sizeof(CARD) * DECK_SIZE );
-	if( deck->cards == NULL )
-		return NULL;
-	
 	for(i = 0; i< DECK_SIZE; i++){
 
 		if((i % 13) == 0)
-			deck->cards[i].rank = strndup("A", 1);
+			strncpy(deck->cards[i].rank, "A", 1);
 		else if((i % 13) == 10)
-			deck->cards[i].rank = strndup("J", 1);
+			strncpy(deck->cards[i].rank, "J", 1);
 		else if((i % 13) == 11)
-			deck->cards[i].rank = strndup("Q", 1);
+			strncpy(deck->cards[i].rank, "Q", 1);
 		else if((i % 13) == 12)
-			deck->cards[i].rank = strndup("K", 1);
+			strncpy(deck->cards[i].rank, "K", 1);
 		else{
 			sRank = itoa(rank);
-			deck->cards[i].rank = strndup(sRank, strlen(sRank));
+			strncpy(deck->cards[i].rank, sRank, strlen(sRank));
 			rank++;
 		}
 
@@ -82,8 +60,6 @@ DECK *DECK_init() {
 			rank = FIRST_NUMERAL;
 		}
 	}
-	
-	return deck;
 }
 
 void DECK_shuffle(DECK *deck) {
@@ -105,7 +81,7 @@ void DECK_shuffle(DECK *deck) {
 	}
 }
 
-GAMEINFO *shmM_open_create( char *shm_name, int shm_size ) {
+GAMEINFO *shmM_create( char *shm_name, int shm_size ) {
 
 	int shmfd;
 	GAMEINFO *shm;
@@ -121,6 +97,38 @@ GAMEINFO *shmM_open_create( char *shm_name, int shm_size ) {
 
 	if( ftruncate( shmfd, shm_size ) < 0 ) {	// Truncate the memory to its size //
 		perror("Failure in ftruncate()");
+		return NULL;
+	}
+
+	// Maps the memory to the GAMEINFO struct //
+	shm = mmap( 0, shm_size, PROT_READ | PROT_WRITE, MAP_SHARED, shmfd, 0 );
+	if( shm == MAP_FAILED ) {
+		perror("Failure in mmap()");
+		return NULL;
+	}
+
+	shm->currPlayers = 0;
+	shm->nPlayers = 0;
+	shm->pturn = 0;
+	shm->round = 0;
+	shm->dealer = 0;
+	pthread_mutex_init( &(shm->gameStart_mut), NULL );
+	pthread_cond_init( &(shm->gameStart_cond), NULL );
+
+	return (GAMEINFO *)shm;
+}
+
+GAMEINFO *shmM_attach( char *shm_name, int shm_size ) {
+
+	int shmfd;
+	GAMEINFO *shm;
+
+	// Creating the shared memory region //
+	// User and Group READ | WRITE permission //
+	shmfd = shm_open( shm_name, O_RDWR, 0660);
+
+	if( shmfd < 0 ) {
+		// perror("Failure in shm_open()");
 		return NULL;
 	}
 
@@ -147,31 +155,9 @@ void shmM_destroy(GAMEINFO *shm, char *shm_name, int shm_size) {
 	}
 }
 
-void shmM_init( GAMEINFO *shm, int nplayers ) {
-
-	shm->players = (PLAYER *)malloc( sizeof(PLAYER) * nplayers );
-	shm->nPlayers = 1;
-	shm->pturn = 0;
-	shm->round = 0;
-	shm->dealer = 0;
-	shm->table = (CARD *)malloc( sizeof(CARD) * nplayers );
-	
-	
-}
-
-PLAYER *PLAYER_init( char *pName, char *FIFOname, int number, int FIFOfd ) {
-	PLAYER *p;
-	
-	p = (PLAYER *)malloc( sizeof(PLAYER) );
-	if( p == NULL )
-		return NULL;
-		
+void PLAYER_init( PLAYER *p, char *pName, char *FIFOname, int number, int FIFOfd ) {		
 	p->number = number;
-	p->hand = NULL;
-	p->name = strndup( pName, strlen(pName) );
-	p->FIFOname = strndup( FIFOname, strlen(FIFOname) );
+	strncpy( p->name, pName, strlen(pName) + 1 );
+	strncpy( p->FIFOname, FIFOname, strlen(FIFOname) + 1);
 	p->FIFOfd = FIFOfd;
-	
-	return p;
 }
-
